@@ -4,15 +4,31 @@
 import sys
 import os
 
-dir = sys.argv[1]
 
-print dir
+def freespace(p):
+    """
+    Returns the number of free bytes on the drive that p is on
+    """
+    s = os.statvfs(p)
+    return s.f_bsize * s.f_bavail
+
+def freespaceGB(p):
+	return freespace(p)/(1024*1024*1024)
+
+try:
+	dir = sys.argv[1]
+except:
+	print "Specify directory on command line, please"
+	sys.exit(0)
+
+print "Analysis of", dir
 
 #if not os.path.exists(dir):
 if not os.path.isdir(dir):
 	print dir, "does not exist"
 	sys.exit(0)
 
+print "Free space (GB):", int(freespaceGB(dir))
 
 testfilename = os.path.join(dir, "blablajkjasldkjfkljklasdjlfk")
 with open(testfilename,'w') as fout:
@@ -42,21 +58,26 @@ rarfilename = os.path.join(dir, "testfileJKLJALKJFJLKFJLJS.rar")
 with open(rarfilename,'w') as fout:
 	fout.write(ba)
 
-# unrar x -y /home/mydir/testfile.rar /home/mydir/
-cmd = "unrar x -y " + rarfilename + " " + dir
+cmd = "unrar x -y " + rarfilename + " " + dir	# unrar x -y /home/mydir/testfile.rar /home/mydir/
 print "cmd is ", cmd
 
-allok = False
+unrarallok = False
 for thisline in os.popen(cmd).readlines():
 	if thisline.find("All OK")>=0:
 		print "OK"
-		allok = True
+		unrarallok = True
 		break
-print allok
+if unrarallok:
+	print "Unrar with unicode went well!"
+else:
+	print "Unrar with unicode: failed!"
 os.remove(rarfilename)
+# to do: remove the unpacked file ...
+os.remove('Hello ∆ ⋂ ∭ there 你好 世界 world.txt')
 
 
-# Check which filesystem type it's on:
+
+# Check which filesystem type it's on. FAT considered harmful (for big files)
 
 if sys.platform.find('linux')>=0:
 	# On Linux:
@@ -72,7 +93,10 @@ if sys.platform.find('linux')>=0:
 	for thisline in os.popen(cmd).readlines():
 		#print thisline
 		if thisline.find('/')==0:
-			print "File system type:", thisline.split()[1]
+			fstype = thisline.split()[1]
+			print "File system type:", fstype
+			if fstype.lower().find('fat') >= 0:
+				print "Warning: FAT found"
 
 
 
